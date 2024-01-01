@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {  toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FaGoogle } from "react-icons/fa";
+import Cookies from "js-cookie"
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,7 +25,7 @@ const Register = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:3500/auth/signup", {
+      const response = await fetch("https://socialappmernbackend.vercel.app/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,12 +38,67 @@ const Register = () => {
         console.log(data);
         toast.success("Signup successful!");
         history("/login");
+
+        Cookies.set("userData", {
+          name: formData.name,
+          email: formData.email,
+        });
+
+        toast.success("Signup successful!");
+        history("/login");
       } else {
-        console.error("Error during signup:", response.statusText);
-        toast.error("Signup failed. Please try again.");
+        const errorData = await response.json();
+        console.error("Error during signup:", errorData);
+        toast.error(errorData.message || "Signup failed. Please try again.");
+     
       }
     } catch (error) {
       console.error("Error during signup:", error.message);
+      toast.error( error.message );
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      window.location.href = "https://socialappmernbackend.vercel.app/auth/google";
+    } catch (error) {
+      console.error("Error during Google Sign-In:", error);
+      toast.error("An error occurred. Please try again later.");
+    }
+  };
+
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    if (code) {
+      handleGoogleSignin(code);
+    }
+  });
+
+  const handleGoogleSignin = async (code) => {
+    try {
+      const response = await fetch(
+        "https://socialappmernbackend.vercel.app/auth/google/callback",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        toast.success("Google sign-in successful!");
+      } else {
+        console.error("Error during Google sign-in:", response.statusText);
+        toast.error("Google sign-in failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error during Google sign-in:", error.message);
       toast.error("An error occurred. Please try again later.");
     }
   };
@@ -103,6 +160,15 @@ const Register = () => {
           >
             Signup
           </button>
+
+          <button
+            onClick={handleGoogleSignIn}
+            type="button"
+            className="w-full flex items-center justify-center bg-red-500 text-white rounded-md py-2 mb-4 transition duration-300 hover:bg-red-600"
+          >
+            <FaGoogle className="mr-2" /> Sign up with Google
+          </button>
+
           <div className="flex space-x-4">
             <button
               onClick={() => history("/")}
